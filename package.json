@@ -1,0 +1,15 @@
+{
+  "name": "constitutional-dao",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Constitutional DAO on GenLayer — intelligent contract + dApp.",
+  "scripts": {
+    "dev": "node server/index.mjs",
+    "start": "node server/index.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "genlayer-js": "1.1.8"
+  }
+}

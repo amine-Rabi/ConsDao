@@ -198,6 +198,14 @@ async function refresh() {
 }
 
 /* ---------- Actions ---------- */
+// True if a transaction can be signed: backend has a key, or a wallet is connected.
+function ensureSigner() {
+  if (state.mode === "demo") return true;
+  if (state.cfg?.canSign || chain.isWalletConnected()) return true;
+  toast("Connect a wallet", "This deployment doesn't sign server-side. Click Connect Wallet to sign transactions yourself.", "err");
+  return false;
+}
+
 function setBusy(b) {
   state.busy = b;
   $("#submitBtn").disabled = b;
@@ -269,6 +277,7 @@ $("#proposalForm").addEventListener("submit", async (e) => {
   const reward = parseInt($("#pReward").value, 10);
   if (!title || !body || !reward || reward < 1) { toast("Missing fields", "Title, description and a reward ≥ 1 GEN are required.", "err"); return; }
   if (state.mode === "demo") { demoSubmit(title, body, reward); e.target.reset(); return; }
+  if (!ensureSigner()) return;
 
   // If signing with a connected wallet, it must be a DAO member.
   if (chain.isWalletConnected()) {
@@ -298,6 +307,7 @@ $("#proposalList").addEventListener("click", (e) => {
   if (!btn) return;
   const p = state.proposals.find((x) => x.id === btn.dataset.id);
   if (!p) return;
+  if (state.mode !== "demo" && !ensureSigner()) return;
   if (state.mode === "demo") {
     if (btn.dataset.act === "vote-for") p.votesFor++;
     else if (btn.dataset.act === "vote-against") p.votesAgainst++;
@@ -321,6 +331,7 @@ $("#proposalList").addEventListener("click", (e) => {
 
 $("#fundBtn").addEventListener("click", () => {
   if (state.mode === "demo") { state.treasuryGen += 50; render(); toast("Funded (demo)", "Added 50 GEN.", "ok"); return; }
+  if (!ensureSigner()) return;
   const amt = parseInt(prompt("Amount of GEN to add to the treasury:", "50") || "0", 10);
   if (amt > 0) txFlow("Funding treasury", () => chain.fundTreasury(amt));
 });
@@ -330,6 +341,7 @@ $("#addMemberBtn").addEventListener("click", () => {
   if (!addr) return;
   if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) { toast("Invalid address", "Expected a 0x-prefixed 40-hex address.", "err"); return; }
   if (state.mode === "demo") { state.members = [...(state.members || []), addr]; render(); toast("Member added (demo)", addr, "ok"); return; }
+  if (!ensureSigner()) return;
   txFlow("Adding member", () => chain.addMember(addr));
 });
 

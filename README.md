@@ -105,3 +105,32 @@ screening and move to voting.
 - The full flow has been exercised live: funding, a compliant proposal (→ voting)
   and a marketing proposal (→ rejected), plus a server-signed vote — all with
   multi-model validator consensus (gpt, claude, qwen, deepseek, gemini, grok…).
+
+
+## Deploy on Vercel
+
+The project is Vercel-ready:
+- `public/` — the static dApp (served at the root)
+- `api/index.mjs` — the Express backend as a serverless function (all `/api/*` routes)
+- `vercel.json` — routes `/api/*` to the function; everything else is static
+- Config is read from **environment variables** (set in the Vercel dashboard), with the local `.env` as a fallback for `npm start`
+
+### Steps
+1. Push the repo to GitHub and "Import Project" in Vercel (no framework preset needed).
+2. In Vercel → Project → Settings → Environment Variables, set:
+   - `GENLAYER_NETWORK` = `testnet-bradbury`
+   - `CONTRACT_ADDRESS` = `0x0B2460cbB579Cd6854101C8cC7568903a22Ac75E`
+   - *(optional)* `GENLAYER_APPELLANT_KEY` — a funded appeal signer
+3. Deploy.
+
+### ⚠️ Security: do NOT put the signing key on a public deployment
+The backend signs transactions with `GENLAYER_PRIVATE_KEY`. If you set that variable
+on a **public** Vercel deployment, anyone who finds the URL can call the write
+endpoints and spend that account's GEN or mutate the DAO — there is no auth.
+
+Recommended for public deploys:
+- **Leave `GENLAYER_PRIVATE_KEY` unset.** The backend then runs **read-only**
+  (`canSign:false`), and all writes are signed by the visitor's own **MetaMask
+  wallet** (the UI prompts "Connect Wallet"). This is the standard, safe dApp model.
+- Only set the server key if the deployment is private / access-controlled, or add
+  an auth gate to the write routes first.

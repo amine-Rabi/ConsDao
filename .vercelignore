@@ -1,0 +1,10 @@
+.env
+.env.local
+deploy/.keystore-pass
+node_modules
+server/node_modules
+artifacts
+__pycache__
+.pytest_cache
+.cache
+tests

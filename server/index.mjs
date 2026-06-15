@@ -17,8 +17,8 @@ import { TransactionStatus } from "genlayer-js/types";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 
-// ---- Minimal .env loader (no extra dependency) ----
-function loadEnv() {
+// ---- Config loader: prefer process.env (Vercel), fall back to local .env file ----
+function loadFileEnv() {
   const out = {};
   const f = join(ROOT, ".env");
   if (!existsSync(f)) return out;
@@ -32,13 +32,15 @@ function loadEnv() {
   return out;
 }
 
-const env = loadEnv();
-const NETWORK = env.GENLAYER_NETWORK || "studionet";
-const CONTRACT = env.CONTRACT_ADDRESS || "0x0B2460cbB579Cd6854101C8cC7568903a22Ac75E";
-const PORT = env.PORT || 8787;
+const fileEnv = loadFileEnv();
+const env = (k) => process.env[k] ?? fileEnv[k];
+
+const NETWORK = env("GENLAYER_NETWORK") || "testnet-bradbury";
+const CONTRACT = env("CONTRACT_ADDRESS") || "0x0B2460cbB579Cd6854101C8cC7568903a22Ac75E";
+const PORT = env("PORT") || 8787;
 const ATTO = 10n ** 18n;
 
-let PK = env.GENLAYER_PRIVATE_KEY || "";
+let PK = env("GENLAYER_PRIVATE_KEY") || "";
 if (PK && !PK.startsWith("0x")) PK = "0x" + PK;
 
 // Map CLI-style network names to genlayer-js chain export keys.
@@ -71,7 +73,7 @@ if (PK) {
 // original submitter — GenLayer reverts CanNotAppeal otherwise).
 let appealClient = null;
 let appellantAddress = null;
-let APK = env.GENLAYER_APPELLANT_KEY || "";
+let APK = env("GENLAYER_APPELLANT_KEY") || "";
 if (APK) {
   if (!APK.startsWith("0x")) APK = "0x" + APK;
   const aAcct = createAccount(APK);
@@ -241,9 +243,16 @@ app.post("/api/proposals/:id/appeal", async (req, res) => {
   }
 });
 
-// ---- Static front-end ----
-app.use(express.static(join(ROOT, "ui")));
+// ---- Static front-end (local dev only; on Vercel, public/ is served statically) ----
+app.use(express.static(join(ROOT, "public")));
 
-app.listen(PORT, () => {
-  console.log(`[server] http://localhost:${PORT}  (network=${NETWORK}, contract=${CONTRACT})`);
-});
+// Only start a listening server when run directly (local dev). On Vercel the app
+// is imported by the serverless function and must not call listen().
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) {
+  app.listen(PORT, () => {
+    console.log(`[server] http://localhost:${PORT}  (network=${NETWORK}, contract=${CONTRACT})`);
+  });
+}
+
+export default app;
