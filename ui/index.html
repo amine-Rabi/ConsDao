@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Constitutional DAO — Optimistic Democracy on GenLayer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ---- Design tokens (from ui-ux-pro-max: Data-Dense Dashboard, web3 dark) ---- */
+    :root {
+      --color-primary: #8B5CF6;
+      --color-on-primary: #FFFFFF;
+      --color-secondary: #A78BFA;
+      --color-accent: #FBBF24;
+      --color-background: #0F0F23;
+      --color-foreground: #F8FAFC;
+      --color-muted: #27273B;
+      --color-muted-fg: #A1A1C2;
+      --color-border: #312E5F;
+      --color-destructive: #EF4444;
+      --color-success: #34D399;
+      --color-warning: #FBBF24;
+      --color-ring: #8B5CF6;
+      --surface: #17172E;
+      --surface-2: #1E1E3A;
+
+      --radius: 14px;
+      --radius-sm: 9px;
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 24px; --space-6: 32px; --space-8: 48px;
+      --shadow-1: 0 1px 2px rgba(0,0,0,.4);
+      --shadow-2: 0 8px 24px rgba(0,0,0,.45);
+      --font-head: 'Space Grotesk', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--color-background);
+      color: var(--color-foreground);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100dvh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ---- 3D animated background ---- */
+    .bg3d {
+      position: fixed; inset: 0; width: 100vw; height: 100dvh;
+      z-index: -2; display: block;
+      background:
+        radial-gradient(1100px 700px at 78% -8%, #1c1640 0%, transparent 55%),
+        radial-gradient(900px 600px at 10% 110%, #161335 0%, transparent 55%),
+        var(--color-background);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+
+    a { color: var(--color-secondary); }
+    h1,h2,h3 { font-family: var(--font-head); line-height: 1.2; margin: 0; }
+    .mono { font-family: var(--font-mono); }
+
+    /* ---- Layout ---- */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; align-items: center; gap: var(--space-4);
+      padding: var(--space-4) var(--space-5);
+      background: rgba(15,15,35,.82);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-head); font-weight: 700; font-size: 18px; }
+    .brand .logo {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+      display: grid; place-items: center;
+    }
+    .brand .logo svg { width: 18px; height: 18px; }
+    .topbar .spacer { flex: 1; }
+    .net-pill {
+      display: inline-flex; align-items: center; gap: var(--space-2);
+      font-size: 13px; color: var(--color-muted-fg);
+      border: 1px solid var(--color-border); border-radius: 999px;
+      padding: 6px 12px; background: var(--surface);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); box-shadow: 0 0 0 3px rgba(52,211,153,.18); }
+
+    main { max-width: 1180px; margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-8); }
+
+    .hero { margin-bottom: var(--space-6); }
+    .hero h1 { font-size: clamp(26px, 4vw, 40px); letter-spacing: -.5px; }
+    .hero p { color: var(--color-muted-fg); max-width: 68ch; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; letter-spacing: .3px;
+      color: var(--color-accent); background: rgba(251,191,36,.1);
+      border: 1px solid rgba(251,191,36,.3); border-radius: 999px;
+      padding: 5px 11px; margin-bottom: var(--space-4);
+    }
+
+    /* ---- KPI cards ---- */
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+    .kpi { background: var(--surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-4) var(--space-5); }
+    .kpi .label { font-size: 13px; color: var(--color-muted-fg); display: flex; align-items: center; gap: 8px; }
+    .kpi .value { font-family: var(--font-head); font-size: 28px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .kpi .value small { font-size: 14px; color: var(--color-muted-fg); font-weight: 500; }
+
+    /* ---- Flow strip ---- */
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-bottom: var(--space-6); }
+    .flow .step { background: var(--surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-4); position: relative; }
+    .flow .step .n { font-family: var(--font-mono); font-size: 12px; color: var(--color-primary); }
+    .flow .step h3 { font-size: 15px; margin: 4px 0 4px; }
+    .flow .step p { font-size: 13px; color: var(--color-muted-fg); margin: 0; }
+    .flow .step.consensus { border-color: rgba(139,92,246,.5); box-shadow: inset 0 0 0 1px rgba(139,92,246,.15); }
+    .flow .step .tag { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 700; letter-spacing: .4px; padding: 3px 7px; border-radius: 6px; }
+    .tag.ai { color: var(--color-primary); background: rgba(139,92,246,.16); }
+    .tag.det { color: var(--color-muted-fg); background: var(--color-muted); }
+
+    /* ---- Panels ---- */
+    .grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: var(--space-5); align-items: start; }
+    .panel { background: var(--surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-5); }
+    .panel h2 { font-size: 18px; margin-bottom: var(--space-2); }
+    .panel .sub { color: var(--color-muted-fg); font-size: 13px; margin-bottom: var(--space-4); }
+
+    /* ---- Proposal cards ---- */
+    .proposal { border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-4); margin-bottom: var(--space-3); background: var(--surface-2); transition: border-color .2s ease, transform .2s ease; position: relative; overflow: hidden; }
+    .proposal:hover { border-color: var(--color-secondary); }
+    /* Aceternity Card Spotlight: a glow that follows the cursor on hover */
+    .proposal::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+      transition: opacity .3s ease; border-radius: inherit;
+      background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 0%), rgba(139,92,246,.18), transparent 42%);
+    }
+    .proposal:hover::before { opacity: 1; }
+    .proposal > * { position: relative; z-index: 1; }
+    /* Newly submitted proposal: highlight that fades smoothly over 10s. */
+    .proposal.is-new { animation: newProposal 10s ease-out forwards; }
+    @keyframes newProposal {
+      0%   { border-color: var(--color-accent); background: rgba(251,191,36,.16); box-shadow: 0 0 0 1px rgba(251,191,36,.5), 0 0 24px rgba(251,191,36,.25); }
+      8%   { border-color: var(--color-accent); background: rgba(251,191,36,.16); box-shadow: 0 0 0 1px rgba(251,191,36,.5), 0 0 24px rgba(251,191,36,.25); }
+      100% { border-color: var(--color-border); background: var(--surface-2); box-shadow: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { .proposal.is-new { animation: none; } }
+    .proposal .head { display: flex; align-items: flex-start; gap: var(--space-3); }
+    .proposal .title { font-weight: 600; font-size: 15px; }
+    .proposal .meta { font-size: 12px; color: var(--color-muted-fg); margin-top: 2px; }
+    .proposal .body { font-size: 14px; color: #cfcfe6; margin: var(--space-3) 0; }
+    .reward { margin-left: auto; font-family: var(--font-mono); font-size: 13px; color: var(--color-accent); white-space: nowrap; }
+
+    .status { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
+    .status::before { content:""; width:6px; height:6px; border-radius:50%; background: currentColor; }
+    .s-voting { color: var(--color-secondary); background: rgba(167,139,250,.14); }
+    .s-screening { color: var(--color-warning); background: rgba(251,191,36,.14); }
+    .s-rejected { color: var(--color-destructive); background: rgba(239,68,68,.14); }
+    .s-approved { color: var(--color-success); background: rgba(52,211,153,.14); }
+    .s-paid { color: var(--color-success); background: rgba(52,211,153,.18); }
+    .s-delivered { color: var(--color-warning); background: rgba(251,191,36,.14); }
+
+    /* AI verdict box */
+    .verdict { border-left: 3px solid var(--color-primary); background: rgba(139,92,246,.08); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #d8d4f0; margin-top: var(--space-3); }
+    .verdict .vh { display:flex; align-items:center; gap:6px; font-weight:600; color: var(--color-secondary); margin-bottom: 4px; font-size: 12px; }
+    .verdict svg { width: 14px; height: 14px; }
+
+    /* votes */
+    .votes { display:flex; align-items:center; gap: var(--space-4); margin-top: var(--space-3); }
+    .votebar { flex:1; height: 8px; border-radius: 999px; background: var(--color-muted); overflow: hidden; display:flex; }
+    .votebar .for { background: var(--color-success); }
+    .votebar .against { background: var(--color-destructive); }
+    .votecount { font-size: 12px; color: var(--color-muted-fg); font-variant-numeric: tabular-nums; }
+
+    .appeal { margin-top: var(--space-3); display:flex; align-items:center; gap: var(--space-2); font-size: 12px; color: var(--color-muted-fg); }
+    .appeal .clock { color: var(--color-warning); }
+
+    .actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); flex-wrap: wrap; }
+
+    /* buttons */
+    button { font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 10px; padding: 10px 16px; border: 1px solid transparent; transition: background .18s ease, border-color .18s ease, transform .1s ease; min-height: 44px; }
+    button:active { transform: scale(.98); }
+    button:focus-visible { outline: 3px solid var(--color-ring); outline-offset: 2px; }
+    .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
+    .btn-primary:hover { background: #7c4ddb; }
+    /* Aceternity Hover Border Gradient on the primary submit button */
+    #submitBtn { position: relative; z-index: 0; border-color: transparent; }
+    #submitBtn::after {
+      content: ""; position: absolute; inset: -2px; border-radius: 12px; z-index: -1;
+      background: conic-gradient(from var(--angle, 0deg), transparent 60%, var(--color-accent), var(--color-secondary), transparent);
+      opacity: 0; transition: opacity .3s ease; animation: spinBorder 4s linear infinite;
+    }
+    #submitBtn:hover::after { opacity: 1; }
+    @keyframes spinBorder { to { --angle: 360deg; } }
+    @property --angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+    .btn-ghost { background: transparent; color: var(--color-foreground); border-color: var(--color-border); }
+    .btn-ghost:hover { border-color: var(--color-secondary); background: var(--surface-2); }
+    .btn-for { background: rgba(52,211,153,.14); color: var(--color-success); border-color: rgba(52,211,153,.4); }
+    .btn-for:hover { background: rgba(52,211,153,.24); }
+    .btn-against { background: rgba(239,68,68,.12); color: var(--color-destructive); border-color: rgba(239,68,68,.4); }
+    .btn-against:hover { background: rgba(239,68,68,.22); }
+
+    /* form */
+    label { display:block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    label .req { color: var(--color-accent); }
+    input, textarea {
+      width: 100%; background: var(--color-background); color: var(--color-foreground);
+      border: 1px solid var(--color-border); border-radius: 10px; padding: 11px 13px;
+      font-family: var(--font-body); font-size: 15px; margin-bottom: var(--space-4);
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--color-ring); box-shadow: 0 0 0 3px rgba(139,92,246,.25); }
+    textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+    .helper { font-size: 12px; color: var(--color-muted-fg); margin: -10px 0 var(--space-4); }
+
+    .constitution { font-size: 13px; color: #cdc9e6; }
+    .constitution li { margin-bottom: 6px; }
+    .constitution code { color: var(--color-accent); font-family: var(--font-mono); }
+
+    /* toast */
+    .toast-wrap { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display:flex; flex-direction: column; gap: 8px; width: min(440px, 92vw); }
+    .toast { background: var(--surface-2); border: 1px solid var(--color-border); border-left: 3px solid var(--color-primary); border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow-2); font-size: 14px; animation: slidein .25s ease; }
+    .toast.ok { border-left-color: var(--color-success); }
+    .toast.err { border-left-color: var(--color-destructive); }
+    .toast .tt { font-weight: 600; margin-bottom: 2px; }
+    .toast .tb { color: var(--color-muted-fg); font-size: 13px; }
+    @keyframes slidein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    .empty { text-align:center; color: var(--color-muted-fg); padding: var(--space-6); font-size: 14px; }
+
+    .mode-banner { font-size: 13px; padding: 10px 14px; border-radius: 10px; margin-bottom: var(--space-5); border: 1px solid var(--color-border); background: var(--surface); color: var(--color-muted-fg); display: flex; align-items: center; gap: 8px; }
+    .mode-banner::before { content:""; width:8px; height:8px; border-radius:50%; background: var(--color-muted-fg); }
+    .mode-banner.live { color: var(--color-success); border-color: rgba(52,211,153,.35); background: rgba(52,211,153,.08); }
+    .mode-banner.live::before { background: var(--color-success); box-shadow: 0 0 0 3px rgba(52,211,153,.18); }
+    .mode-banner.demo { color: var(--color-warning); border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.08); }
+    .mode-banner.demo::before { background: var(--color-warning); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .kpi-action { font-size: 11px; font-weight: 600; padding: 2px 8px; min-height: 0; border-radius: 6px; background: var(--surface-2); color: var(--color-secondary); border: 1px solid var(--color-border); margin-left: 6px; }
+    .kpi-action:hover { border-color: var(--color-secondary); }
+    .member-list { display: flex; flex-direction: column; gap: 6px; }
+    .member { font-size: 13px; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--surface-2); display: flex; align-items: center; gap: 8px; }
+    .member::before { content:""; width:7px; height:7px; border-radius:50%; background: var(--color-secondary); }
+
+    @media (max-width: 980px) {
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .flow { grid-template-columns: repeat(2, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      .kpis { grid-template-columns: 1fr 1fr; }
+      main { padding: var(--space-5) var(--space-4); }
+    }
+  </style>
+</head>
+<body>
+  <canvas class="bg3d" id="bg3d" aria-hidden="true"></canvas>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg>
+      </span>
+      Constitutional DAO
+    </div>
+    <div class="spacer"></div>
+    <span class="net-pill"><span class="dot" aria-hidden="true"></span> GenLayer · Testnet Bradbury</span>
+    <button class="btn-ghost" id="connectBtn" type="button">Connect Wallet</button>
+  </header>
+
+  <main>
+    <div class="mode-banner" id="modeBanner">Connecting to studionet…</div>
+
+    <section class="hero">
+      <span class="badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        OPTIMISTIC DEMOCRACY
+      </span>
+      <h1>Govern by a constitution your validators actually read</h1>
+      <p>Every bounty is screened against the DAO's natural-language constitution by GenLayer validator consensus before members can vote. A challenge window lets anyone appeal a wrong verdict. Delivery is verified the same way before funds move.</p>
+    </section>
+
+    <section class="kpis" aria-label="Treasury and activity overview">
+      <div class="kpi">
+        <div class="label">Treasury <button class="kpi-action" id="fundBtn" type="button">+ Fund</button></div>
+        <div class="value" id="kpiTreasury">0.0 <small>GEN</small></div>
+      </div>
+      <div class="kpi"><div class="label">Members</div><div class="value" id="kpiMembers">3</div></div>
+      <div class="kpi"><div class="label">In voting</div><div class="value" id="kpiVoting">0</div></div>
+      <div class="kpi"><div class="label">Paid out</div><div class="value" id="kpiPaid">0 <small>GEN</small></div></div>
+    </section>
+
+    <section class="flow" aria-label="How a proposal flows through the DAO">
+      <div class="step consensus"><span class="tag ai">AI CONSENSUS</span><div class="n">01</div><h3>Constitution check</h3><p>Validators judge the proposal against the constitution. Verdict is optimistic.</p></div>
+      <div class="step"><span class="tag det">DETERMINISTIC</span><div class="n">02</div><h3>Member vote</h3><p>If it passes screening, members vote. Plain on-chain tally.</p></div>
+      <div class="step consensus"><span class="tag ai">AI CONSENSUS</span><div class="n">03</div><h3>Delivery check</h3><p>Submitted work is fetched and judged against the bounty.</p></div>
+      <div class="step"><span class="tag det">DETERMINISTIC</span><div class="n">04</div><h3>Payout</h3><p>On a pass, the reward leaves the treasury. Pure balance math.</p></div>
+    </section>
+
+    <div class="grid">
+      <!-- Left: proposals -->
+      <section class="panel" aria-label="Proposals">
+        <h2>Proposals</h2>
+        <p class="sub">Live view of every bounty and where it sits in the lifecycle.</p>
+        <div id="proposalList"></div>
+      </section>
+
+      <!-- Right: submit + constitution -->
+      <div style="display:flex; flex-direction:column; gap: var(--space-5);">
+        <section class="panel" aria-label="Submit a proposal">
+          <h2>Submit a bounty</h2>
+          <p class="sub">It will be screened against the constitution by consensus before voting opens.</p>
+          <form id="proposalForm" novalidate>
+            <label for="pTitle">Title <span class="req" aria-hidden="true">*</span></label>
+            <input id="pTitle" name="title" type="text" required autocomplete="off" placeholder="e.g. Add encrypted backups to the wallet" />
+
+            <label for="pBody">Description <span class="req" aria-hidden="true">*</span></label>
+            <textarea id="pBody" name="body" required placeholder="Describe the open-source deliverable and scope of work."></textarea>
+
+            <label for="pReward">Reward (GEN) <span class="req" aria-hidden="true">*</span></label>
+            <input id="pReward" name="reward" type="number" min="1" step="1" required inputmode="numeric" placeholder="10" />
+            <p class="helper">Submitted on-chain to studionet. Validators judge it against the constitution before voting opens. Mentioning marketing, ads, or token-price promotion will be rejected under principle 2.</p>
+
+            <button class="btn-primary" type="submit" id="submitBtn" style="width:100%;">Submit for screening</button>
+          </form>
+        </section>
+
+        <section class="panel" aria-label="The constitution">
+          <h2>The Constitution</h2>
+          <p class="sub">Plain English. Validators read this to judge every proposal.</p>
+          <ol class="constitution">
+            <li>Funds may only support open-source work under an OSI-approved license.</li>
+            <li>No proposal may fund <code>marketing</code>, <code>advertising</code>, or token-price promotion.</li>
+            <li>No proposal may fund anything illegal or harmful to users.</li>
+            <li>Rewards must be proportionate to the scope of work described.</li>
+          </ol>
+        </section>
+
+        <section class="panel" aria-label="Members">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2>Members</h2>
+            <button class="kpi-action" id="addMemberBtn" type="button">+ Add</button>
+          </div>
+          <p class="sub">Only the owner can add members. Members may submit and vote.</p>
+          <div id="memberList" class="member-list"></div>
+        </section>
+
+        <section class="panel" aria-label="Add a member">
+          <h2>Add a member</h2>
+          <p class="sub">Owner-only. New members can submit proposals and vote.</p>
+          <form id="memberForm" novalidate>
+            <label for="mAddr">Member address <span class="req" aria-hidden="true">*</span></label>
+            <input id="mAddr" name="address" type="text" autocomplete="off" placeholder="0x…" spellcheck="false" />
+            <button class="btn-ghost" type="submit" id="addMemberBtn" style="width:100%;">Add member</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="background.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

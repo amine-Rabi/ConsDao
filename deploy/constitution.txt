@@ -1,0 +1,7 @@
+The DAO funds open-source software that advances privacy and user sovereignty.
+
+Principles:
+1. Funds may only support open-source work released under an OSI-approved license.
+2. No proposal may fund marketing, advertising, or token-price promotion.
+3. No proposal may fund anything illegal or harmful to users.
+4. Rewards must be proportionate to the scope of work described.

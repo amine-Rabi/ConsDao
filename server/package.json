@@ -1,0 +1,14 @@
+{
+  "name": "constitutional-dao-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend signer + static host for the Constitutional DAO dApp.",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "genlayer-js": "1.1.8"
+  }
+}

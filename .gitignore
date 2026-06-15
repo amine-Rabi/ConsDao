@@ -1,0 +1,22 @@
+# Secrets — never commit
+.env
+.env.local
+*.key
+keystore.json
+deploy/.keystore-pass
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+
+# Node
+node_modules/
+
+# GenLayer build artifacts
+artifacts/
+
+# OS / editor
+.DS_Store
+Thumbs.db
